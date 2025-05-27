@@ -1,5 +1,9 @@
+//Contributed by Varun
 #include <iostream>
-#include <cmath>     // for pow()
+#include <cmath>        // For pow()
+#include <iomanip>      // For setprecision
+#include <limits>       // For numeric_limits
+
 using namespace std;
 
 // Function declarations
@@ -9,25 +13,47 @@ float subtract(float a, float b);
 float multiply(float a, float b);
 float divide(float a, float b);
 int modulus(int a, int b);
-double power(double base, int exp);
+double power(double base, double exp);
 
 int main() {
     int choice;
     float num1, num2;
+
+    cout << fixed << setprecision(2);  // Format output to 2 decimal places
 
     do {
         showMenu();
         cout << "Enter your choice (1-7): ";
         cin >> choice;
 
+        if (cin.fail()) {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "Invalid input. Please enter a number from 1 to 7.\n";
+            continue;
+        }
+
         if (choice >= 1 && choice <= 6) {
             cout << "Enter first number: ";
             cin >> num1;
+            if (cin.fail()) {
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                cout << "Invalid input. Please enter a valid number.\n";
+                continue;
+            }
+
             cout << "Enter second number: ";
             cin >> num2;
+            if (cin.fail()) {
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                cout << "Invalid input. Please enter a valid number.\n";
+                continue;
+            }
         }
 
-        switch(choice) {
+        switch (choice) {
             case 1:
                 cout << "Result: " << add(num1, num2) << endl;
                 break;
@@ -44,10 +70,17 @@ int main() {
                     cout << "Error: Division by zero!" << endl;
                 break;
             case 5:
-                cout << "Result: " << modulus((int)num1, (int)num2) << endl;
+                if ((int)num2 == 0) {
+                    cout << "Error: Division by zero!" << endl;
+                } else {
+                    if (num1 != (int)num1 || num2 != (int)num2) {
+                        cout << "Warning: Modulus is only valid for integers. Truncating decimals." << endl;
+                    }
+                    cout << "Result: " << modulus((int)num1, (int)num2) << endl;
+                }
                 break;
             case 6:
-                cout << "Result: " << power(num1, (int)num2) << endl;
+                cout << "Result: " << power(num1, num2) << endl;
                 break;
             case 7:
                 cout << "Exiting the calculator. Goodbye!" << endl;
@@ -93,14 +126,9 @@ float divide(float a, float b) {
 }
 
 int modulus(int a, int b) {
-    if (b == 0) {
-        cout << "Error: Division by zero!" << endl;
-        return 0;
-    }
     return a % b;
 }
 
-double power(double base, int exp) {
+double power(double base, double exp) {
     return pow(base, exp);
 }
-
