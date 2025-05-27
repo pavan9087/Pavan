@@ -1,134 +1,281 @@
-//Contributed by Varun
-#include <iostream>
-#include <cmath>        // For pow()
-#include <iomanip>      // For setprecision
-#include <limits>       // For numeric_limits
+// ===================================================================
+// Project: Bank Management System
+// Contributed by: Varun
+// Description:
+// This is a file-based bank management system implemented in C++.
+// It uses object-oriented programming to manage customer accounts,
+// enabling operations such as creating, updating, deleting accounts,
+// deposits, withdrawals, and account lookups with data persistence.
+// ===================================================================
 
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <iomanip>
+#include <limits>
 using namespace std;
 
-// Function declarations
-void showMenu();
-float add(float a, float b);
-float subtract(float a, float b);
-float multiply(float a, float b);
-float divide(float a, float b);
-int modulus(int a, int b);
-double power(double base, double exp);
+class Account {
+private:
+    int accountNumber;
+    string name;
+    double balance;
+
+public:
+    Account() {}
+    Account(int accNo, string accName, double bal) {
+        accountNumber = accNo;
+        name = accName;
+        balance = bal;
+    }
+
+    void createAccount() {
+        cout << "Enter Account Number: ";
+        cin >> accountNumber;
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        cout << "Enter Account Holder Name: ";
+        getline(cin, name);
+        cout << "Enter Initial Balance: ";
+        cin >> balance;
+    }
+
+    void showAccount() const {
+        cout << left << setw(15) << accountNumber
+             << setw(20) << name
+             << fixed << setprecision(2) << balance << endl;
+    }
+
+    void deposit(double amount) {
+        balance += amount;
+    }
+
+    void withdraw(double amount) {
+        if (balance >= amount)
+            balance -= amount;
+        else
+            cout << "Insufficient balance!" << endl;
+    }
+
+    int getAccountNumber() const {
+        return accountNumber;
+    }
+
+    double getBalance() const {
+        return balance;
+    }
+
+    string getName() const {
+        return name;
+    }
+
+    void updateAccount(string newName) {
+        name = newName;
+    }
+};
+
+class BankSystem {
+private:
+    vector<Account> accounts;
+
+public:
+    BankSystem() {
+        loadFromFile();
+    }
+
+    void addAccount() {
+        Account acc;
+        acc.createAccount();
+        accounts.push_back(acc);
+        saveToFile();
+        cout << "Account Created Successfully!\n";
+    }
+
+    void displayAccounts() const {
+        if (accounts.empty()) {
+            cout << "No accounts to display.\n";
+            return;
+        }
+
+        cout << left << setw(15) << "Account No"
+             << setw(20) << "Name"
+             << "Balance" << endl;
+        cout << "--------------------------------------------------\n";
+
+        for (const auto& acc : accounts)
+            acc.showAccount();
+    }
+
+    void depositToAccount() {
+        int accNo;
+        double amount;
+        cout << "Enter Account Number: ";
+        cin >> accNo;
+        cout << "Enter Deposit Amount: ";
+        cin >> amount;
+
+        for (auto& acc : accounts) {
+            if (acc.getAccountNumber() == accNo) {
+                acc.deposit(amount);
+                saveToFile();
+                cout << "Deposit Successful!\n";
+                return;
+            }
+        }
+        cout << "Account Not Found!\n";
+    }
+
+    void withdrawFromAccount() {
+        int accNo;
+        double amount;
+        cout << "Enter Account Number: ";
+        cin >> accNo;
+        cout << "Enter Withdrawal Amount: ";
+        cin >> amount;
+
+        for (auto& acc : accounts) {
+            if (acc.getAccountNumber() == accNo) {
+                acc.withdraw(amount);
+                saveToFile();
+                cout << "Withdrawal Processed.\n";
+                return;
+            }
+        }
+        cout << "Account Not Found!\n";
+    }
+
+    void updateAccountDetails() {
+        int accNo;
+        cout << "Enter Account Number to Update: ";
+        cin >> accNo;
+
+        for (auto& acc : accounts) {
+            if (acc.getAccountNumber() == accNo) {
+                string newName;
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                cout << "Enter New Name: ";
+                getline(cin, newName);
+                acc.updateAccount(newName);
+                saveToFile();
+                cout << "Account Updated Successfully!\n";
+                return;
+            }
+        }
+        cout << "Account Not Found!\n";
+    }
+
+    void deleteAccount() {
+        int accNo;
+        cout << "Enter Account Number to Delete: ";
+        cin >> accNo;
+
+        for (auto it = accounts.begin(); it != accounts.end(); ++it) {
+            if (it->getAccountNumber() == accNo) {
+                accounts.erase(it);
+                saveToFile();
+                cout << "Account Deleted Successfully!\n";
+                return;
+            }
+        }
+        cout << "Account Not Found!\n";
+    }
+
+    void findAccount() const {
+        int accNo;
+        cout << "Enter Account Number to Search: ";
+        cin >> accNo;
+
+        for (const auto& acc : accounts) {
+            if (acc.getAccountNumber() == accNo) {
+                cout << "Account Found:\n";
+                acc.showAccount();
+                return;
+            }
+        }
+        cout << "Account Not Found!\n";
+    }
+
+    void saveToFile() const {
+        ofstream outFile("accounts.dat");
+        if (!outFile) {
+            cout << "Error opening file for saving.\n";
+            return;
+        }
+
+        for (const auto& acc : accounts) {
+            outFile << acc.getAccountNumber() << '\n'
+                    << acc.getName() << '\n'
+                    << acc.getBalance() << '\n';
+        }
+        outFile.close();
+    }
+
+    void loadFromFile() {
+        ifstream inFile("accounts.dat");
+        if (!inFile) return;  // No file exists yet
+
+        accounts.clear();
+        int accNo;
+        string name;
+        double balance;
+
+        while (inFile >> accNo) {
+            inFile.ignore();
+            getline(inFile, name);
+            inFile >> balance;
+            inFile.ignore();
+            accounts.emplace_back(accNo, name, balance);
+        }
+
+        inFile.close();
+    }
+};
 
 int main() {
+    BankSystem bank;
     int choice;
-    float num1, num2;
-
-    cout << fixed << setprecision(2);  // Format output to 2 decimal places
 
     do {
-        showMenu();
-        cout << "Enter your choice (1-7): ";
+        cout << "\n====== Bank Management System ======\n";
+        cout << "1. Create New Account\n";
+        cout << "2. Display All Accounts\n";
+        cout << "3. Deposit Money\n";
+        cout << "4. Withdraw Money\n";
+        cout << "5. Update Account\n";
+        cout << "6. Delete Account\n";
+        cout << "7. Find Account\n";
+        cout << "0. Exit\n";
+        cout << "Enter your choice: ";
         cin >> choice;
-
-        if (cin.fail()) {
-            cin.clear();
-            cin.ignore(numeric_limits<streamsize>::max(), '\n');
-            cout << "Invalid input. Please enter a number from 1 to 7.\n";
-            continue;
-        }
-
-        if (choice >= 1 && choice <= 6) {
-            cout << "Enter first number: ";
-            cin >> num1;
-            if (cin.fail()) {
-                cin.clear();
-                cin.ignore(numeric_limits<streamsize>::max(), '\n');
-                cout << "Invalid input. Please enter a valid number.\n";
-                continue;
-            }
-
-            cout << "Enter second number: ";
-            cin >> num2;
-            if (cin.fail()) {
-                cin.clear();
-                cin.ignore(numeric_limits<streamsize>::max(), '\n');
-                cout << "Invalid input. Please enter a valid number.\n";
-                continue;
-            }
-        }
 
         switch (choice) {
             case 1:
-                cout << "Result: " << add(num1, num2) << endl;
+                bank.addAccount();
                 break;
             case 2:
-                cout << "Result: " << subtract(num1, num2) << endl;
+                bank.displayAccounts();
                 break;
             case 3:
-                cout << "Result: " << multiply(num1, num2) << endl;
+                bank.depositToAccount();
                 break;
             case 4:
-                if (num2 != 0)
-                    cout << "Result: " << divide(num1, num2) << endl;
-                else
-                    cout << "Error: Division by zero!" << endl;
+                bank.withdrawFromAccount();
                 break;
             case 5:
-                if ((int)num2 == 0) {
-                    cout << "Error: Division by zero!" << endl;
-                } else {
-                    if (num1 != (int)num1 || num2 != (int)num2) {
-                        cout << "Warning: Modulus is only valid for integers. Truncating decimals." << endl;
-                    }
-                    cout << "Result: " << modulus((int)num1, (int)num2) << endl;
-                }
+                bank.updateAccountDetails();
                 break;
             case 6:
-                cout << "Result: " << power(num1, num2) << endl;
+                bank.deleteAccount();
                 break;
             case 7:
-                cout << "Exiting the calculator. Goodbye!" << endl;
+                bank.findAccount();
+                break;
+            case 0:
+                cout << "Exiting system...\n";
                 break;
             default:
-                cout << "Invalid choice. Please try again!" << endl;
+                cout << "Invalid choice. Try again.\n";
         }
-
-        cout << "----------------------------------\n";
-
-    } while (choice != 7);
+    } while (choice != 0);
 
     return 0;
-}
-
-// Function definitions
-void showMenu() {
-    cout << "\n========= Calculator Menu =========\n";
-    cout << "1. Addition (+)\n";
-    cout << "2. Subtraction (-)\n";
-    cout << "3. Multiplication (*)\n";
-    cout << "4. Division (/)\n";
-    cout << "5. Modulus (%)\n";
-    cout << "6. Power (x^y)\n";
-    cout << "7. Exit\n";
-    cout << "===================================\n";
-}
-
-float add(float a, float b) {
-    return a + b;
-}
-
-float subtract(float a, float b) {
-    return a - b;
-}
-
-float multiply(float a, float b) {
-    return a * b;
-}
-
-float divide(float a, float b) {
-    return a / b;
-}
-
-int modulus(int a, int b) {
-    return a % b;
-}
-
-double power(double base, double exp) {
-    return pow(base, exp);
 }
